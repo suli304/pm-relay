@@ -1,8 +1,8 @@
 {
- "generated_at": "2026-10-23T20:15:02Z",
+ "generated_at": "2026-10-23T20:24:02Z",
  "n_markets": 1800,
- "n_queries": 59,
- "n_series": 60,
- "elapsed_s": 28.3,
+ "n_queries": 104,
+ "n_series": 14,
+ "elapsed_s": 6.6,
  "errors": []
 }
