@@ -75,39 +75,42 @@ def slim_market(m):
     }
 
 
-def fetch_markets(max_markets=1200, floor_24h=1000.0, page=100, max_pages=60):
-    out, seen, errors = [], set(), []
-    offset = 0
-    for _ in range(max_pages):
-        url = ("%s/events?limit=%d&offset=%d&active=true&closed=false"
-               "&order=volume24hr&ascending=false" % (GAMMA, page, offset))
-        try:
-            evs = get_json(url)
-        except Exception as e:                       # noqa: BLE001
-            errors.append("events offset=%d: %s" % (offset, e))
-            break
-        if not isinstance(evs, list) or not evs:
-            break
-        low = 0
-        for ev in evs:
-            v24 = float((ev or {}).get("volume24hr") or 0)
-            if v24 < floor_24h:
-                low += 1
-            for m in ((ev or {}).get("markets") or []):
-                mid = str(m.get("id") or "")
-                if not mid or mid in seen:
-                    continue
-                seen.add(mid)
-                rec = slim_market(m)
-                rec["volume24hr"] = rec["volume24hr"] or v24
-                out.append(rec)
-        offset += len(evs)
-        if len(out) >= max_markets:
-            break
-        if low >= max(3, len(evs) // 2):             # 尾部已明显低量 → 早停
-            break
-    # 去重后再按 24h 量排序，截断
-    out.sort(key=lambda x: -x["volume24hr"])
+def fetch_markets(max_markets=1600, floor_24h=1000.0, page=100, max_pages=40):
+    """两路抓取再合并：
+      order=volume24hr → 今天在热炒的（电竞/加密即时盘多）
+      order=volume     → 结构性大市场（美联储/停摆/油价/大选）
+    只用 24h 量会把主线要看的宏观盘口全挤掉 —— 2026-10-24 实测：1200 个里全是
+    'Baron Nashor'，问油价/停摆时一个都搜不到。"""
+    recs, seen, errors = {}, set(), []
+    for order in ("volume24hr", "volume"):
+        offset = 0
+        for _ in range(max_pages):
+            url = ("%s/events?limit=%d&offset=%d&active=true&closed=false"
+                   "&order=%s&ascending=false" % (GAMMA, page, offset, order))
+            try:
+                evs = get_json(url)
+            except Exception as e:                       # noqa: BLE001
+                errors.append("%s offset=%d: %s" % (order, offset, e))
+                break
+            if not isinstance(evs, list) or not evs:
+                break
+            low = 0
+            for ev in evs:
+                v24 = float((ev or {}).get("volume24hr") or 0)
+                if v24 < floor_24h:
+                    low += 1
+                for m in ((ev or {}).get("markets") or []):
+                    mid = str(m.get("id") or "")
+                    if not mid or mid in seen:
+                        continue
+                    seen.add(mid)
+                    rec = slim_market(m)
+                    rec["volume24hr"] = rec["volume24hr"] or v24
+                    recs[mid] = rec
+            offset += len(evs)
+            if low >= max(3, len(evs) // 2):
+                break
+    out = sorted(recs.values(), key=lambda x: -max(x["volume"], x["volume24hr"]))
     return out[:max_markets], errors
 
 
