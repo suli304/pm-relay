@@ -38,7 +38,7 @@ jobs:
 
       - name: Fetch
         run: |
-          ARGS="--out relay --max-markets 1200 --series-cap 60"
+          ARGS="--out relay --max-markets 1800 --series-cap 60"
           if [ "${{ github.event.inputs.debug }}" = "true" ]; then ARGS="$ARGS --no-series"; fi
           python relay/fetch_pm.py $ARGS
 
