@@ -1,0 +1,22 @@
+{
+  "_note": "Polymarket 检索词（英文子串匹配 question/slug/event title）。由主线关键词人工+LLM 生成，N3 会自动追加。大小写不敏感。",
+  "generated_from_mainlines": {
+    "1": "全球主要央行在债市高压与通胀黏性下会不会被迫延长紧缩/推迟降息，甚至引发主权信用风险",
+    "2": "AI资本开支与估值狂欢会不会走向泡沫修正，还是被算力需求与监管治理重新锚定",
+    "3": "中东多线冲突与红海—霍尔木兹航运风险会不会升级为全球能源与油品供应危机",
+    "4": "俄乌能源停火与美乌政策博弈会不会在冬季前走向可验证缓和",
+    "5": "中国扩内需、宽货币与资本市场改革能否对冲外需与科技股波动"
+  },
+  "queries": [
+    "fed ", "fomc", "rate hike", "rate cut", "interest rate", "powell", "warsh",
+    "inflation", "cpi", "pce", "recession", "treasury", "yield", "bond",
+    "debt ceiling", "government shutdown", "default", "credit rating",
+    "ai capex", "nvidia", "openai", "data center", "semiconductor", "chip",
+    "hbm", "memory price", "dram", "nand", "bubble", "nasdaq",
+    "oil", "crude", "wti", "brent", "opec", "hormuz", "red sea", "houthi",
+    "strait", "shipping", "tanker", "saudi", "iran", "israel",
+    "ukraine", "russia", "ceasefire", "peace deal", "sanctions",
+    "china stimulus", "pboc", "yuan", "tariff", "trade deal", "xi jinping",
+    "a-share", "hang seng", "property crisis", "local government debt"
+  ]
+}
