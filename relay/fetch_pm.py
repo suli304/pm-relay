@@ -172,6 +172,52 @@ def fetch_series(markets, cap=60, intervals=(("1w", 60), ("max", 1440))):
     return out, errors
 
 
+def load_tokens(path):
+    """relay/tokens.json = {"tokens":["<clobTokenId>", ...]}
+    为什么要有它：绑定阶段已经确定了**具体哪个盘口**，再靠英文短语去猜是浪费且抓不到
+    （实测：LLM 给的是 'ai bubble contagion'，市场原文是 'AI bubble burst'，字面不匹配）。"""
+    if not path or not os.path.exists(path):
+        return []
+    try:
+        d = json.load(open(path, encoding="utf-8"))
+    except Exception:
+        return []
+    arr = d.get("tokens") if isinstance(d, dict) else d
+    out = []
+    for x in (arr or []):
+        t = x.get("token") if isinstance(x, dict) else x
+        if t:
+            out.append(str(t))
+    return out
+
+
+def fetch_series_tokens(tokens, cap=200):
+    """按显式 token 清单抓序列（不走关键词匹配）"""
+    out, errors = {}, []
+    for tok in tokens[:cap]:
+        rec = {}
+        for interval, key in (("1w", "1h"), ("max", "1d")):
+            url = ("%s/prices-history?market=%s&interval=%s&fidelity=%d"
+                   % (CLOB, urllib.parse.quote(tok), interval, 60 if key == "1h" else 1440))
+            try:
+                d = get_json(url)
+            except Exception as e:                   # noqa: BLE001
+                errors.append("token %s %s: %s" % (tok[:12], interval, e))
+                continue
+            pts = []
+            for p in (d.get("history") or []):
+                t = p.get("t") or p.get("timestamp")
+                v = p.get("p") if "p" in p else p.get("price")
+                if t is None or v is None:
+                    continue
+                pts.append([int(t), round(float(v), 4)])
+            if pts:
+                rec[key] = pts
+        if rec:
+            out[tok] = rec
+    return out, errors
+
+
 def cmd_selftest():
     sample_market = {"id": "553001", "question": "Fed rate hike in October 2026?", "slug": "fed-hike-oct",
                      "outcomes": '["Yes","No"]', "outcomePrices": '["0.41","0.59"]',
@@ -216,9 +262,15 @@ def main(argv=None):
     os.makedirs(a.out, exist_ok=True)
     t0 = time.time()
     queries = load_queries(a.queries)
+    tokens = load_tokens(os.path.join(a.out, "tokens.json"))
     mk, errs = fetch_markets(a.max_markets, a.floor_24h)
-    picked = match_queries(mk, queries, cap=a.series_cap) if queries else mk[:a.series_cap]
-    ser, errs2 = ({}, []) if a.no_series else fetch_series(picked, a.series_cap)
+    if tokens:
+        ser, errs2 = ({}, []) if a.no_series else fetch_series_tokens(tokens, cap=a.series_cap * 4)
+        sel = "tokens=%d" % len(tokens)
+    else:
+        picked = match_queries(mk, queries, cap=a.series_cap) if queries else mk[:a.series_cap]
+        ser, errs2 = ({}, []) if a.no_series else fetch_series(picked, a.series_cap)
+        sel = "queries=%d" % len(queries)
 
     json.dump({"generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                "n": len(mk), "markets": mk},
@@ -227,6 +279,7 @@ def main(argv=None):
     json.dump(ser, open(os.path.join(a.out, "series.json"), "w", encoding="utf-8"), ensure_ascii=False)
     meta = {"generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "n_markets": len(mk), "n_queries": len(queries), "n_series": len(ser),
+            "series_mode": sel,
             "elapsed_s": round(time.time() - t0, 1),
             "errors": (errs + errs2)[:20]}
     json.dump(meta, open(os.path.join(a.out, "meta.json"), "w", encoding="utf-8"),
