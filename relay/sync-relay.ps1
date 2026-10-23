@@ -22,10 +22,11 @@ $OutDir = (Resolve-Path $OutDir).Path
 $base = "https://raw.githubusercontent.com/$Repo/$Branch/relay"
 
 function _get([string]$name) {
-  $u = "$base/$name"
+  # 加 cache-buster：raw.githubusercontent 有 CDN 缓存，刚提交完直接拉会拿到上一版
+  $u = "$base/$name`?t=" + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
   $dst = Join-Path $OutDir $name
   try {
-    $r = Invoke-WebRequest -Uri $u -TimeoutSec 30 -UseBasicParsing
+    $r = Invoke-WebRequest -Uri $u -TimeoutSec 30 -UseBasicParsing -Headers @{ 'Cache-Control' = 'no-cache' }
   } catch {
     throw "拉取失败 $u ：$($_.Exception.Message)"
   }
