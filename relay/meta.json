@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-10-25T01:36:36Z",
+ "generated_at": "2026-10-25T05:11:06Z",
  "n_markets": 1800,
  "n_queries": 104,
  "n_series": 8,
  "series_mode": "tokens=20",
- "elapsed_s": 61.5,
+ "elapsed_s": 27.6,
  "errors": []
 }
