@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-22T14:50:59Z",
+ "generated_at": "2026-11-22T20:59:56Z",
  "n_markets": 0,
  "n_queries": 86,
  "n_series": 9,
  "series_mode": "tokens=20",
- "elapsed_s": 19.6,
+ "elapsed_s": 22.8,
  "errors": [
   "volume24hr offset=0: HTTP Error 406: Not Acceptable",
   "volume offset=0: HTTP Error 406: Not Acceptable"
